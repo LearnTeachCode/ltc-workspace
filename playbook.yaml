@@ -108,13 +108,13 @@
     apt:
       name: nix-bin
       update_cache: yes
-  - name: Configure Nix to use a legacy compatible channel
+  - name: Configure Nix to use a legacy compatible channel directly from source tarball
     become: yes
     shell: |
-      # Remove any existing channels to prevent conflicts
+      # Remove any existing failed channels
       nix-channel --remove nixpkgs || true
-      # Add the NixOS 20.11 channel which is compatible with Nix 2.6.0
-      nix-channel --add https://nixos.org/channels/nixos-20.11 nixpkgs
+      # Use the GitHub archive instead of the nixos.org channel shortcut
+      nix-channel --add https://github.com/NixOS/nixpkgs/archive/nixos-20.11.tar.gz nixpkgs
       nix-channel --update
     args:
       # This ensures the task is idempotent
