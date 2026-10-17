@@ -93,38 +93,20 @@
     keychain_version_expected: "{{ keychain_version }}.."
 
   tasks:
-  #- name: Install nix using official non-daemon installer
-  #  become: yes
-  #  shell: |
-  #    curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
-  #  args:
-  #    creates: /nix/var/nix/profile/bin/nix
-  #- name: Install nix using determinate nix installer # see https://github.com/DeterminateSystems/nix-installer#in-a-container (Fails with`/nix/store/69vhmfdm78jb9c3yj0wykr2y8fnabysr-determinate-nix-3.23.2/bin/nix-store: /usr/lib/x86_64-linux-gnu/libcrypto.so.3: version `OPENSSL_3.4.0' not found (required by /nix/store/nm95jgm7w3qbrd44b63qnv2sr78k60ly-s2n-tls-1.7.6/lib/libs2n.so.1)` error)
-  #  shell: |
-  #    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install linux --extra-conf "sandbox = false" --init none --no-confirm
-  #  args:
-  #    creates: /nix/var/nix/profile/bin/nix
   - name: Install nix-bin # see https://moonpiedumplings.github.io/projects/setting-up-kasm/#customized-kasm-images
     apt:
       name: nix-bin
       update_cache: yes
-  - name: Clone nixpkgs (version nixos-{{ nixos_release }}) repository locally
-    become: yes
-    git:
-      repo: 'https://github.com/NixOS/nixpkgs.git'
-      dest: /opt/nixpkgs-{{ nixos_release }}
-      version: nixos-{{ nixos_release }}
-      force: yes
   - name: Add kasm-user to nix-users group
     shell: usermod -aG nix-users kasm-user
   - name: Install git {{ git_version }} with nix
-    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA git --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix profile install nixpkgs/release-{{ nixos_release }}#git --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: Install Git Bash Completion
-    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA bash-completion --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix profile install nixpkgs/release-{{ nixos_release }}#bash-completion --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: Install Keychain
-    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA keychain --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix profile install nixpkgs/release-{{ nixos_release }}#keychain --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: install ping
-    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA unixtools.ping --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix profile install nixpkgs#unixtools.ping --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: Get keychain version
     shell:
       cmd: keychain -V 2> >(grep -i keychain) 2> >(sed 's/[[:alpha:]|(|[:space:]]//g') | fgrep '*' | sed 's/[*~://]//g'
