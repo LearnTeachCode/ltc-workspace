@@ -118,13 +118,13 @@
   - name: Add kasm-user to nix-users group
     shell: usermod -aG nix-users kasm-user
   - name: Install git {{ git_version }} with nix
-    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA nixpkgs.git --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA git --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: Install Git Bash Completion
-    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA nixpkgs.bash-completion --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA bash-completion --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: Install Keychain
-    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA nixpkgs.keychain --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA keychain --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: install ping
-    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA nixpkgs.unixtools.ping --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA unixtools.ping --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: Get keychain version
     shell:
       cmd: keychain -V 2> >(grep -i keychain) 2> >(sed 's/[[:alpha:]|(|[:space:]]//g') | fgrep '*' | sed 's/[*~://]//g'
