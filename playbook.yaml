@@ -349,6 +349,7 @@
 
   roles:
     - role: gantsign.visual-studio-code
+      visual_studio_code_version: "1.91.1*"
       users:
         - username: "dev"
           visual_studio_code_extensions:
