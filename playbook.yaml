@@ -93,21 +93,32 @@
     keychain_version_expected: "{{ keychain_version }}.."
 
   tasks:
-  - name: Install nix using official non-daemon installer
-    become: yes
-    shell: |
-      curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
-    args:
-      creates: /nix/var/nix/profile/bin/nix
+  #- name: Install nix using official non-daemon installer
+  #  become: yes
+  #  shell: |
+  #    curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
+  #  args:
+  #    creates: /nix/var/nix/profile/bin/nix
   #- name: Install nix using determinate nix installer # see https://github.com/DeterminateSystems/nix-installer#in-a-container (Fails with`/nix/store/69vhmfdm78jb9c3yj0wykr2y8fnabysr-determinate-nix-3.23.2/bin/nix-store: /usr/lib/x86_64-linux-gnu/libcrypto.so.3: version `OPENSSL_3.4.0' not found (required by /nix/store/nm95jgm7w3qbrd44b63qnv2sr78k60ly-s2n-tls-1.7.6/lib/libs2n.so.1)` error)
   #  shell: |
   #    curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install linux --extra-conf "sandbox = false" --init none --no-confirm
   #  args:
   #    creates: /nix/var/nix/profile/bin/nix
-  #- name: Install nix-bin # see https://moonpiedumplings.github.io/projects/setting-up-kasm/#customized-kasm-images
-  #  apt:
-  #    name: nix-bin
-  #    update_cache: yes
+  - name: Install nix-bin # see https://moonpiedumplings.github.io/projects/setting-up-kasm/#customized-kasm-images
+    apt:
+      name: nix-bin
+      update_cache: yes
+  - name: Configure Nix to use a legacy compatible channel
+    become: yes
+    shell: |
+      # Remove any existing channels to prevent conflicts
+      nix-channel --remove nixpkgs || true
+      # Add the NixOS 20.11 channel which is compatible with Nix 2.6.0
+      nix-channel --add https://nixos.org/channels/nixos-20.11 nixpkgs
+      nix-channel --update
+    args:
+      # This ensures the task is idempotent
+      creates: /nix/var/nix/profiles/per-user/root/channels
   - name: Add kasm-user to nix-users group
     shell: usermod -aG nix-users kasm-user
   - name: Install git {{ git_version }} with nix
