@@ -108,27 +108,23 @@
     apt:
       name: nix-bin
       update_cache: yes
-  - name: Configure Nix to use a legacy compatible channel directly from source tarball
+  - name: Clone nixpkgs (version nixos-{{ nixos_release }}) repository locally
     become: yes
-    shell: |
-      # Remove any existing failed channels
-      nix-channel --remove nixpkgs || true
-      # Use the GitHub archive instead of the nixos.org channel shortcut
-      nix-channel --add https://github.com/NixOS/nixpkgs/archive/nixos-20.11.tar.gz nixpkgs
-      nix-channel --update
-    args:
-      # This ensures the task is idempotent
-      creates: /nix/var/nix/profiles/per-user/root/channels
+    git:
+      repo: 'https://github.com/NixOS/nixpkgs.git'
+      dest: /opt/nixpkgs-{{ nixos_release }}
+      version: nixos-{{ nixos_release }}
+      force: yes
   - name: Add kasm-user to nix-users group
     shell: usermod -aG nix-users kasm-user
   - name: Install git {{ git_version }} with nix
-    shell: nix profile install nixpkgs/release-{{ nixos_release }}#git --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA nixpkgs.git --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: Install Git Bash Completion
-    shell: nix profile install nixpkgs/release-{{ nixos_release }}#bash-completion --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA nixpkgs.bash-completion --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: Install Keychain
-    shell: nix profile install nixpkgs/release-{{ nixos_release }}#keychain --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA nixpkgs.keychain --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: install ping
-    shell: nix profile install nixpkgs#unixtools.ping --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix-env -f /opt/nixpkgs-{{ nixos_release }} -iA nixpkgs.unixtools.ping --extra-experimental-features nix-command --extra-experimental-features flakes
   - name: Get keychain version
     shell:
       cmd: keychain -V 2> >(grep -i keychain) 2> >(sed 's/[[:alpha:]|(|[:space:]]//g') | fgrep '*' | sed 's/[*~://]//g'
