@@ -99,6 +99,12 @@
       update_cache: yes
   - name: Add kasm-user to nix-users group
     shell: usermod -aG nix-users kasm-user
+  - name: Remove existing /nix/var/nix/profiles/per-user/root directory
+    shell: rm -rf /nix/var/nix/profiles/per-user/root
+  - name: Create temporary first-generation directory
+    shell: mkdir -p /nix/var/nix/profiles/per-user/root-gen-0
+  - name: Symlink /nix/var/nix/profiles/per-user/root to /nix/var/nix/profiles/per-user/root-gen-0
+    shell: ln -sfn /nix/var/nix/profiles/per-user/root-gen-0 /nix/var/nix/profiles/per-user/root
   - name: Install git {{ git_version }} with nix
     shell: nix profile install nixpkgs/release-{{ nixos_release }}#git --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/per-user/root
   - name: Install Git Bash Completion
