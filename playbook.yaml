@@ -99,6 +99,8 @@
       update_cache: yes
   - name: Add kasm-user to nix-users group
     shell: usermod -aG nix-users kasm-user
+  - name: Create nix system profile
+    shell: mkdir -p /nix/var/nix/profiles/system
   - name: Install git {{ git_version }} with nix
     shell: nix profile install nixpkgs/release-{{ nixos_release }}#git --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/system
   - name: Install Git Bash Completion
