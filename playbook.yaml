@@ -100,13 +100,13 @@
   - name: Add kasm-user to nix-users group
     shell: usermod -aG nix-users kasm-user
   - name: Install git {{ git_version }} with nix
-    shell: nix profile install nixpkgs/release-{{ nixos_release }}#git --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix profile install nixpkgs/release-{{ nixos_release }}#git --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/system
   - name: Install Git Bash Completion
-    shell: nix profile install nixpkgs/release-{{ nixos_release }}#bash-completion --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix profile install nixpkgs/release-{{ nixos_release }}#bash-completion --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/system
   - name: Install Keychain
-    shell: nix profile install nixpkgs/release-{{ nixos_release }}#keychain --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix profile install nixpkgs/release-{{ nixos_release }}#keychain --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/system
   - name: install ping
-    shell: nix profile install nixpkgs#unixtools.ping --extra-experimental-features nix-command --extra-experimental-features flakes
+    shell: nix profile install nixpkgs#unixtools.ping --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/system
   - name: Get keychain version
     shell:
       cmd: keychain -V 2> >(grep -i keychain) 2> >(sed 's/[[:alpha:]|(|[:space:]]//g') | fgrep '*' | sed 's/[*~://]//g'
