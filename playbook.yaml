@@ -115,29 +115,29 @@
       owner: root
       group: root
       mode: '0755'
-  - name: Install git {{ git_version }} with nix
-    shell: nix profile install nixpkgs/release-{{ nixos_release }}#git --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/per-user/root
-  - name: Install Git Bash Completion
-    shell: nix profile install nixpkgs/release-{{ nixos_release }}#bash-completion --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/per-user/root
-  - name: Install Keychain
-    shell: nix profile install nixpkgs/release-{{ nixos_release }}#keychain --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/per-user/root
-  - name: install ping
-    shell: nix profile install nixpkgs#unixtools.ping --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/per-user/root
-  - name: Get keychain version
-    shell:
-      cmd: keychain -V 2> >(grep -i keychain) 2> >(sed 's/[[:alpha:]|(|[:space:]]//g') | fgrep '*' | sed 's/[*~://]//g'
-      executable: /bin/bash
-    register: installed_keychain_version
-  - name: Get git version
-    shell: git version | sed 's/[[:alpha:]|(|[:space:]]//g'
-    register: installed_git_version
-  - name: Display git and keychain versions
-    debug:
-      msg: "git = {{ installed_git_version.stdout }} | keychain = {{ installed_keychain_version.stdout }}"
-  - name: Test git version
-    fail:
-      msg: "Git Version Error: Expected {{ git_version }} | Found {{ installed_git_version.stdout }}"
-    when: installed_git_version.stdout != git_version
+  # - name: Install git {{ git_version }} with nix
+  #   shell: nix profile install nixpkgs/release-{{ nixos_release }}#git --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/per-user/root
+  # - name: Install Git Bash Completion
+  #   shell: nix profile install nixpkgs/release-{{ nixos_release }}#bash-completion --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/per-user/root
+  # - name: Install Keychain
+  #   shell: nix profile install nixpkgs/release-{{ nixos_release }}#keychain --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/per-user/root
+  # - name: install ping
+  #   shell: nix profile install nixpkgs#unixtools.ping --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/per-user/root
+  # - name: Get keychain version
+  #   shell:
+  #     cmd: keychain -V 2> >(grep -i keychain) 2> >(sed 's/[[:alpha:]|(|[:space:]]//g') | fgrep '*' | sed 's/[*~://]//g'
+  #     executable: /bin/bash
+  #   register: installed_keychain_version
+  # - name: Get git version
+  #   shell: git version | sed 's/[[:alpha:]|(|[:space:]]//g'
+  #   register: installed_git_version
+  # - name: Display git and keychain versions
+  #   debug:
+  #     msg: "git = {{ installed_git_version.stdout }} | keychain = {{ installed_keychain_version.stdout }}"
+  # - name: Test git version
+  #   fail:
+  #     msg: "Git Version Error: Expected {{ git_version }} | Found {{ installed_git_version.stdout }}"
+  #   when: installed_git_version.stdout != git_version
   #- name: Test keychain version
   #  fail:
   #    msg: "Keychain Version Error: Expected {{ keychain_version_expected }} | Found {{ installed_keychain_version.stdout }}"
