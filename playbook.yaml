@@ -105,6 +105,14 @@
     shell: mkdir -p /nix/var/nix/profiles/per-user/root-gen-0
   - name: Symlink /nix/var/nix/profiles/per-user/root to /nix/var/nix/profiles/per-user/root-gen-0
     shell: ln -sfn /nix/var/nix/profiles/per-user/root-gen-0 /nix/var/nix/profiles/per-user/root
+  - name: Copy script for exporting nix root profile to path to /etc/profile.d/nix-root-profile.sh
+    copy:
+      src: /home/kasm-default-profile/install_files/nix-root-profile.sh
+      dest: /etc/profile.d/nix-root-profile.sh
+      remote_src: yes
+      owner: root
+      group: root
+      mode: '0755'
   - name: Install git {{ git_version }} with nix
     shell: nix profile install nixpkgs/release-{{ nixos_release }}#git --extra-experimental-features 'nix-command flakes' --profile /nix/var/nix/profiles/per-user/root
   - name: Install Git Bash Completion
