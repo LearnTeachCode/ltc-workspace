@@ -88,9 +88,8 @@
 
   vars:
     nixos_release: "26.05"
-    nix_install_dir: "/opt/nix"
-    nix_bin_path: "{{ nix_install_dir }}/bin/nix"
-    nix_profile_dir: "/opt/nix-profile"
+    nix_version: "2.35.3"
+    nix_installer_dir: /tmp/nix-{{ nix_version }}-x86_64-linux
     git_version: "2.43.0"
     keychain_version: "2.8.5"
     keychain_version_expected: "{{ keychain_version }}.."
@@ -100,11 +99,11 @@
   #   apt:
   #     name: nix-bin
   #     update_cache: yes
-  - name: Create {{ nix_install_dir }} directory with chmod 755
-    file:
-      path: "{{ nix_install_dir }}"
-      state: directory
-      mode: '0755'
+  # - name: Create {{ nix_install_dir }} directory with chmod 755
+  #   file:
+  #     path: "{{ nix_install_dir }}"
+  #     state: directory
+  #     mode: '0755'
   - name: Create /nix directory with chmod 755
     file:
       path: /nix
@@ -122,13 +121,20 @@
     apt:
       name: sudo
       update_cache: yes
-  - name: Set nix profile (environment variable) to /opt/nix-profile and install (single-user) nix using classic nix installer with --fallback (i.e., build from source to dynamically pull OpenSSL version)
-    shell: curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --no-daemon --fallback --install-dir {{ nix_install_dir }} --profile-dir {{ nix_profile_dir }}
-    environment:
-      NIX_PROFILE: /{{ nix_profile_dir }}
-      NIX_INSTALLER_NO_MODIFY_PROFILE: 1
+  - name: Download nix tarball {{ nix_version }}
+    shell: curl -L https://releases.nixos.org/nix/nix-{{ nix_version }}/nix-{{ nix_version }}-x86\_64-linux.tar.xz -o {{ nix_installer_dir }}.tar.xz
+  - name: Extract nix tarball to /tmp
+    shell:
+      cmd: "tar -xvf {{ nix_installer_dir }}.tar.xz"
+      chdir: /tmp
+      executable: /bin/bash
     args:
-      creates: "{{ nix_bin_path }}"
+      creates: "{{ nix_installer_dir }}/install"
+  - name: Install (single-user) nix using classic nix installer with --fallback (i.e., build from source to dynamically pull OpenSSL version)
+    shell:
+      cmd: ./install --no-daemon --fallback
+      chdir: "{{ nix_installer_dir }}"
+      executable: /bin/bash
   # - name: Add kasm-user to nix-users group
   #   shell: usermod -aG nix-users kasm-user
   # - name: Remove existing /nix/var/nix/profiles/per-user/root directory
