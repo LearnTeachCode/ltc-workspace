@@ -110,6 +110,10 @@
       path: /nix
       state: directory
       mode: '0755'
+  - name: Install Sudo
+    apt:
+      name: sudo
+      update_cache: yes
   - name: Set nix profile (environment variable) to /opt/nix-profile and install (single-user) nix using classic nix installer with --fallback (i.e., build from source to dynamically pull OpenSSL version)
     shell: curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --no-daemon --fallback --install-dir {{ nix_install_dir }} --profile-dir {{ nix_profile_dir }}
     environment:
