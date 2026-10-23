@@ -104,23 +104,6 @@
   #     path: "{{ nix_install_dir }}"
   #     state: directory
   #     mode: '0755'
-  - name: Create /nix directory with chmod 755
-    file:
-      path: /nix
-      state: directory
-      mode: '0755'
-  - name: Install build dependencies
-    apt:
-      name:
-        - xz-utils          # unpacks binary tarball
-        - build-essential   # gcc, make, etc.
-        - libssl-dev        # for OpenSSL
-        - ca-certificates
-      update_cache: yes
-  - name: Install Sudo
-    apt:
-      name: sudo
-      update_cache: yes
   - name: Download nix tarball {{ nix_version }}
     shell: curl -L https://releases.nixos.org/nix/nix-{{ nix_version }}/nix-{{ nix_version }}-x86\_64-linux.tar.xz -o {{ nix_installer_dir }}.tar.xz
   - name: Extract nix tarball to /tmp
