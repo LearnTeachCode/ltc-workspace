@@ -130,9 +130,9 @@
       executable: /bin/bash
     args:
       creates: "{{ nix_installer_dir }}/install"
-  - name: Install (single-user) nix using classic nix installer with --fallback (i.e., build from source to dynamically pull OpenSSL version)
+  - name: Install (single-user) nix using classic nix installer
     shell:
-      cmd: ./install --no-daemon --fallback
+      cmd: ./install --no-daemon
       chdir: "{{ nix_installer_dir }}"
       executable: /bin/bash
   # - name: Add kasm-user to nix-users group
