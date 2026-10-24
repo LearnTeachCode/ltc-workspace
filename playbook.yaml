@@ -113,13 +113,15 @@
       executable: /bin/bash
     args:
       creates: "{{ nix_installer_dir }}/install"
-  - name: unset LD_LIBRARY_PATH
-    shell: unset LD_LIBRARY_PATH
+  # - name: unset LD_LIBRARY_PATH
+  #   shell: unset LD_LIBRARY_PATH
   - name: Install (single-user) nix using classic nix installer with --yes (run install script non-interactively)
     shell:
       cmd: ./install --no-daemon --yes
       chdir: "{{ nix_installer_dir }}"
       executable: /bin/bash
+    environment:
+      LD_LIBRARY_PATH: ""
   # - name: Add kasm-user to nix-users group
   #   shell: usermod -aG nix-users kasm-user
   # - name: Remove existing /nix/var/nix/profiles/per-user/root directory
