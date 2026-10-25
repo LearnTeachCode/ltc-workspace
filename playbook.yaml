@@ -109,8 +109,8 @@
     - install_vscode
 
   vars:
-    nixos_release: "26.05"
     nix_version: "2.35.3"
+    nixpkgs_branch: "nixos-26.05"
     nix_bin_dir: /nix/var/nix/profiles/default/bin
     nix_bin_path: "{{ nix_bin_dir }}/nix"
     nix_install_dir: /home/kasm-default-profile/install_files/
@@ -145,15 +145,15 @@
   - name: Add {{ nix_bin_dir }} to PATH system-wide
     shell: printf "\nexport PATH="{{ nix_bin_dir }}:$PATH"\n" >> /etc/profile && . /etc/profile
   - name: Install git {{ git_version }} with nix
-    shell: "{{ nix_bin_path }} profile install nixpkgs/release-{{ nixos_release }}#git --extra-experimental-features 'nix-command flakes'"
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#git --extra-experimental-features 'nix-command flakes'"
     environment:
       LD_LIBRARY_PATH: ""
   - name: Install Git Bash Completion
-    shell: "{{ nix_bin_path }} profile install nixpkgs/release-{{ nixos_release }}#bash-completion --extra-experimental-features 'nix-command flakes'"
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#bash-completion --extra-experimental-features 'nix-command flakes'"
     environment:
       LD_LIBRARY_PATH: ""
   - name: Install Keychain
-    shell: "{{ nix_bin_path }} profile install nixpkgs/release-{{ nixos_release }}#keychain --extra-experimental-features 'nix-command flakes'"
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#keychain --extra-experimental-features 'nix-command flakes'"
     environment:
       LD_LIBRARY_PATH: ""
   - name: install ping
@@ -206,13 +206,13 @@
     - install_vscode
 
   vars:
-    nixos_release: "26.05"
+    nixpkgs_branch: "nixos-26.05"
     nix_bin_dir: /nix/var/nix/profiles/default/bin
     nix_bin_path: "{{ nix_bin_dir }}/nix"
 
   tasks:
   - name: Install sudo
-    shell: "{{ nix_bin_path }} profile install nixpkgs/release-{{ nixos_release }}#sudo --extra-experimental-features 'nix-command flakes'"
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#sudo --extra-experimental-features 'nix-command flakes'"
     environment:
       LD_LIBRARY_PATH: ""
   - name: Preserve DONT_PROMPT_WSL_INSTALL in sudoers
@@ -316,18 +316,18 @@
   - install_python_packages
 
   vars:
-    nixos_release: "26.05"
+    nixpkgs_branch: "nixos-26.05"
     nix_bin_dir: /nix/var/nix/profiles/default/bin
     nix_bin_path: "{{ nix_bin_dir }}/nix"
     pint_version: 0.26.2
 
   tasks:
   - name: Install python3  with nix
-    shell: "{{ nix_bin_path }} profile install nixpkgs/release-{{ nixos_release }}#python3 --extra-experimental-features 'nix-command flakes'"
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#python3 --extra-experimental-features 'nix-command flakes'"
     environment:
       LD_LIBRARY_PATH: ""
   - name: Install pip  with nix
-    shell: "{{ nix_bin_path }} profile install nixpkgs/release-{{ nixos_release }}#python313Packages.pip --extra-experimental-features 'nix-command flakes'"
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#python313Packages.pip --extra-experimental-features 'nix-command flakes'"
     environment:
       LD_LIBRARY_PATH: ""
   - name: Install python packages with pip
