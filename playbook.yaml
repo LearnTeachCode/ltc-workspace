@@ -84,6 +84,7 @@
   tags:
     - install_utilities
     - install_vscode
+    - install_python_packages
 
   tasks:
   - name: Add dev user
@@ -206,7 +207,6 @@
 
   vars:
     nixos_release: "26.05"
-    nix_version: "2.35.3"
     nix_bin_dir: /nix/var/nix/profiles/default/bin
     nix_bin_path: "{{ nix_bin_dir }}/nix"
 
@@ -315,24 +315,45 @@
   tags:
   - install_python_packages
 
+  vars:
+    nixos_release: "26.05"
+    nix_bin_dir: /nix/var/nix/profiles/default/bin
+    nix_bin_path: "{{ nix_bin_dir }}/nix"
+    pint_version: 0.26.2
+
   tasks:
-  - name: Update OS to point python to python3
-    apt:
-      name: python-is-python3
-      update_cache: yes
-  - name: Install pip for python3 with Apt
-    apt:
-      name: python3-pip
-      update_cache: yes
+  - name: Install python3  with nix
+    shell: "{{ nix_bin_path }} profile install nixpkgs/release-{{ nixos_release }}#python3 --extra-experimental-features 'nix-command flakes'"
+    environment:
+      LD_LIBRARY_PATH: ""
+  - name: Install pip  with nix
+    shell: "{{ nix_bin_path }} profile install nixpkgs/release-{{ nixos_release }}#python313Packages.pip --extra-experimental-features 'nix-command flakes'"
+    environment:
+      LD_LIBRARY_PATH: ""
   - name: Install python packages with pip
     pip:
       break_system_packages: true
       name:
-        - pint
+        - pint=={{ pint_version }}
         - voila
         - notebook==6.5.7
-        - jupyterlab==3.6.8
+        # - jupyterlab==3.6.8
       extra_args: --ignore-installed
+    environment:
+      LD_LIBRARY_PATH: ""
+      PATH: "{{ nix_bin_dir }}:$PATH"
+  - name: Get Pint version
+    shell: "{{ nix_bin_dir }}/python -c 'import pint; print(pint.__version__)'"
+    register: installed_pint_version
+    environment:
+      LD_LIBRARY_PATH: ""
+  - name: Display Pint versions
+    debug:
+      msg: "pint = {{ installed_pint_version.stdout }}"
+  - name: Test Pint version
+    fail:
+      msg: "Pint Version Error: Expected {{ pint_version }} | Found {{ installed_pint_version.stdout }}"
+    when: installed_pint_version.stdout != pint_version
   - name: Get disk usage
     shell: df -h
     register: disk_usage
