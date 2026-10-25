@@ -78,30 +78,6 @@
     - role: webarchitect609.google_chrome
 
 -
-  # install sudo for the vs-code role below
-  hosts: localhost
-  connection: local
-  tags:
-    - install_vscode
-
-  tasks:
-  - name: Install Sudo
-    apt:
-      name: sudo
-      update_cache: yes
-  - name: Preserve DONT_PROMPT_WSL_INSTALL in sudoers
-    lineinfile:
-      path: "/etc/sudoers"
-      line: "Defaults        env_keep += \"DONT_PROMPT_WSL_INSTALL\""
-    when: wsl2_environment
-  - name: Get disk usage
-    shell: df -h
-    register: disk_usage
-  - name: Display disk usage
-    debug:
-      msg: "{{ disk_usage.stdout }}"
-
--
 # add dev user to give vs code somewhere to install extensions
   hosts: localhost
   connection: local
@@ -129,6 +105,7 @@
   tags:
     - install_utilities
     - install_python_packages
+    - install_vscode
 
   vars:
     nixos_release: "26.05"
@@ -213,6 +190,36 @@
     get_url:
       url: https://gist.githubusercontent.com/capsulecorplab/401ba2fe0857a328f2a626adbf078cc6/raw/b89a6234f0d620ff60bcfe37f95de197b8772377/.gitconfig
       dest: /home/kasm-default-profile/
+  - name: Get disk usage
+    shell: df -h
+    register: disk_usage
+  - name: Display disk usage
+    debug:
+      msg: "{{ disk_usage.stdout }}"
+
+-
+  # install sudo for the vs-code role below
+  hosts: localhost
+  connection: local
+  tags:
+    - install_vscode
+
+  vars:
+    nixos_release: "26.05"
+    nix_version: "2.35.3"
+    nix_bin_dir: /nix/var/nix/profiles/default/bin
+    nix_bin_path: "{{ nix_bin_dir }}/nix"
+
+  tasks:
+  - name: Install sudo
+    shell: "{{ nix_bin_path }} profile install nixpkgs/release-{{ nixos_release }}#sudo --extra-experimental-features 'nix-command flakes'"
+    environment:
+      LD_LIBRARY_PATH: ""
+  - name: Preserve DONT_PROMPT_WSL_INSTALL in sudoers
+    lineinfile:
+      path: "/etc/sudoers"
+      line: "Defaults        env_keep += \"DONT_PROMPT_WSL_INSTALL\""
+    when: wsl2_environment
   - name: Get disk usage
     shell: df -h
     register: disk_usage
