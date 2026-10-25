@@ -14,12 +14,12 @@ This repo provides a workspace for the [LearnTeachCode resource page](https://gi
     - yarn v4.3.1
     - oclif v4.14.6
 - Utilities
-    - git v2.43.0 with @capsulecorplab .gitconfig
-    - [Keychain](https://www.funtoo.org/Keychain) v2.8.5
+    - git v2.54.0 with @capsulecorplab .gitconfig
+    - [Keychain](https://www.funtoo.org/Keychain) v2.9.8
     - Vim (pre-installed) with @capsulecorplab [vimrc](https://gist.github.com/capsulecorplab/495058e7a57ed8adaed3c40c80d09739#file-vimrc)
-- Python 3.12.3 (part of the image template) with the following packages (not part of the image template)
+- Python 3.13
     - pip
-    - [Pint](https://pint.readthedocs.io/en/stable/)
+    - [Pint](https://pint.readthedocs.io/en/stable/) v0.26.2
 - VS Code with the following extensions (note, auto-updates are disabled)
     - [Python extension by Microsoft](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
     - [Dendron](https://marketplace.visualstudio.com/items?itemName=dendron.dendron)
