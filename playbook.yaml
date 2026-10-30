@@ -78,32 +78,19 @@
     - role: webarchitect609.google_chrome
 
 -
-  # install firefox
+# add dev user to give vs code somewhere to install extensions
   hosts: localhost
   connection: local
-  gather_facts: yes
   tags:
-    - install_firefox
-
-  vars:
-    firefox_profiles:
-      default:
-        extensions:
-          - ublock-origin
-        preferences:
-          network.cookie.cookieBehavior: 1
-          privacy.donottrackheader.enabled: true
-          datareporting.healthreport.uploadEnabled: false
-      secondprofile:
-        extensions:
-          - adblock-plus
-        preferences:
-          privacy.donottrackheader.enabled: false
-          privacy.trackingprotection.enabled: false
-          signon.rememberSignons: false
-          datareporting.healthreport.uploadEnabled: false
+    - install_utilities
+    - install_vscode
+    - install_python_packages
 
   tasks:
+  - name: Add dev user
+    user:
+      name: dev
+      uid: 1002
   - name: Get disk usage
     shell: df -h
     register: disk_usage
@@ -111,54 +98,80 @@
     debug:
       msg: "{{ disk_usage.stdout }}"
 
-  pre_tasks:
-  - name: Update apt packages
-    apt:
-      update_cache: yes
-
-  roles:
-    - role: staticdev.firefox
-
 -
-  # install keychain, git, and @capsulecorplab .vimrc and .gitconfig
+  # install keychain, git, nix, and @capsulecorplab .vimrc and .gitconfig
   hosts: localhost
   connection: local
   gather_facts: yes
-  tags: install_utilities
+  tags:
+    - install_utilities
+    - install_python_packages
+    - install_vscode
 
   vars:
-    git_version: "2.43.0"
-    git_version_to_install: "1:{{ git_version }}-1ubuntu7"
-    keychain_version: "2.8.5"
-    keychain_version_to_install: "{{ keychain_version }}-4"
-    keychain_version_expected: "{{ keychain_version }}.."
+    nix_version: "2.35.3"
+    nixpkgs_branch: "nixos-26.05"
+    nix_bin_dir: /nix/var/nix/profiles/default/bin
+    nix_bin_path: "{{ nix_bin_dir }}/nix"
+    nix_install_dir: /home/kasm-default-profile/install_files/
+    nix_installer_dir: "{{ nix_install_dir }}/nix-{{ nix_version }}-x86_64-linux"
+    git_version: "2.54.0"
+    keychain_version: "2.9.8"
+    keychain_version_expected: "{{ keychain_version }}."
 
   tasks:
-  - name: Add git PPA
-    shell: add-apt-repository ppa:git-core/ppa
-  - name: Install git
-    apt:
-      name: git
+  - name: Download nix tarball {{ nix_version }}
+    shell: curl -L https://releases.nixos.org/nix/nix-{{ nix_version }}/nix-{{ nix_version }}-x86\_64-linux.tar.xz -o {{ nix_installer_dir }}.tar.xz
+  - name: Extract nix tarball to {{ nix_install_dir }}
+    shell:
+      cmd: "tar -xvf {{ nix_installer_dir }}.tar.xz"
+      chdir: "{{ nix_install_dir }}"
+      executable: /bin/bash
+    args:
+      creates: "{{ nix_installer_dir }}/install"
+  - name: Create nix build users group # workaround to shut up installer from complaining about no nixbld group 
+    shell: groupadd nixbld
+  - name: Add dev to nixbld group # workaround to shut up installer from complaining about no user in nixbld group
+    shell: usermod -aG nixbld dev
+  - name: Unset LD_LIBRARY_PATH system-wide
+    shell: printf "\nunset LD_LIBRARY_PATH\n" >> /etc/profile && . /etc/profile
+  - name: Install (single-user) nix using classic nix installer with --yes (run install script non-interactively)
+    shell:
+      cmd: ./install --no-daemon --yes
+      chdir: "{{ nix_installer_dir }}"
+      executable: /bin/bash
+    environment:
+      LD_LIBRARY_PATH: ""
+  - name: Add {{ nix_bin_dir }} to PATH system-wide
+    shell: printf "\nexport PATH="{{ nix_bin_dir }}:$PATH"\n" >> /etc/profile && . /etc/profile
+  - name: Install git {{ git_version }} with nix
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#git --extra-experimental-features 'nix-command flakes'"
+    environment:
+      LD_LIBRARY_PATH: ""
   - name: Install Git Bash Completion
-    apt:
-      name: bash-completion
-      update_cache: yes
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#bash-completion --extra-experimental-features 'nix-command flakes'"
+    environment:
+      LD_LIBRARY_PATH: ""
   - name: Install Keychain
-    apt:
-      name: "keychain={{ keychain_version_to_install }}"
-      update_cache: yes
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#keychain --extra-experimental-features 'nix-command flakes'"
+    environment:
+      LD_LIBRARY_PATH: ""
   - name: install ping
-    apt:
-      name: iputils-ping
-      update_cache: yes
-  - name: Get git version
-    shell: git version | sed 's/[[:alpha:]|(|[:space:]]//g'
-    register: installed_git_version
+    shell: "{{ nix_bin_path }} profile install nixpkgs#unixtools.ping --extra-experimental-features 'nix-command flakes'"
+    environment:
+      LD_LIBRARY_PATH: ""
   - name: Get keychain version
     shell:
-      cmd: keychain -V 2> >(grep -i keychain) 2> >(sed 's/[[:alpha:]|(|[:space:]]//g') | fgrep '*' | sed 's/[*~://]//g'
+      cmd: "{{ nix_bin_dir }}/keychain -V 2> >(grep -i keychain) 2> >(sed 's/[[:alpha:]|(|[:space:]]//g') | fgrep '*' | sed 's/[*~://]//g'"
       executable: /bin/bash
     register: installed_keychain_version
+    environment:
+      LD_LIBRARY_PATH: ""
+  - name: Get git version
+    shell: "{{ nix_bin_dir }}/git version | sed 's/[[:alpha:]|(|[:space:]]//g'"
+    register: installed_git_version
+    environment:
+      LD_LIBRARY_PATH: ""
   - name: Display git and keychain versions
     debug:
       msg: "git = {{ installed_git_version.stdout }} | keychain = {{ installed_keychain_version.stdout }}"
@@ -186,25 +199,161 @@
       msg: "{{ disk_usage.stdout }}"
 
 -
+  # install sudo for the vs-code role below
+  hosts: localhost
+  connection: local
+  tags:
+    - install_vscode
+
+  vars:
+    nixpkgs_branch: "nixos-26.05"
+    nix_bin_dir: /nix/var/nix/profiles/default/bin
+    nix_bin_path: "{{ nix_bin_dir }}/nix"
+
+  tasks:
+  - name: Install sudo
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#sudo --extra-experimental-features 'nix-command flakes'"
+    environment:
+      LD_LIBRARY_PATH: ""
+  - name: Preserve DONT_PROMPT_WSL_INSTALL in sudoers
+    lineinfile:
+      path: "/etc/sudoers"
+      line: "Defaults        env_keep += \"DONT_PROMPT_WSL_INSTALL\""
+    when: wsl2_environment
+  - name: Get disk usage
+    shell: df -h
+    register: disk_usage
+  - name: Display disk usage
+    debug:
+      msg: "{{ disk_usage.stdout }}"
+
+-
+  # install VS Code
+  hosts: localhost
+  connection: local
+  tags:
+    - install_vscode
+
+  environment:
+    DONT_PROMPT_WSL_INSTALL: 1
+
+  tasks:
+  - name: Get disk usage
+    shell: df -h
+    register: disk_usage
+  - name: Display disk usage
+    debug:
+      msg: "{{ disk_usage.stdout }}"
+
+  roles:
+    - role: gantsign.visual-studio-code
+      visual_studio_code_version: "1.91.1*"
+      users:
+        - username: "dev"
+          visual_studio_code_extensions:
+            - ms-python.python
+            - dendron.dendron
+            #- foam.foam-vscode
+          visual_studio_code_settings_overwrite: yes
+          visual_studio_code_settings: {
+            "extensions.ignoreRecommendations": true,
+            "update.mode": "none",
+            "extensions.autoUpdate": false,
+            "extensions.autoCheckUpdates": false,
+            "terminal.integrated.profiles.linux": {
+              "bash (login)": {
+                "path": "bash",
+                "args": ["-l"]
+                }
+              },
+            "terminal.integrated.defaultProfile.linux": "bash (login)"
+          }
+
+-
+  # Copy VS Code changes to kasm-default-profile
+  hosts: localhost
+  connection: local
+  tags:
+    - install_vscode
+
+  tasks:
+  - name: Copy VS Code changes to kasm-default-profile
+    shell:
+      cmd: cp -r /home/dev/.config/Code/ /home/kasm-default-profile/.config/Code/ && cp -r /home/dev/.vscode/ /home/kasm-default-profile/.vscode/
+  - name: Get disk usage
+    shell: df -h
+    register: disk_usage
+  - name: Display disk usage
+    debug:
+      msg: "{{ disk_usage.stdout }}"
+
+-
+  # Clean up (remove) dev user now that things are installed
+  hosts: localhost
+  connection: local
+  tags:
+    - install_vscode
+
+  tasks:
+  - name: Remove dev user
+    user:
+      name: dev
+      state: absent
+      remove: yes
+  - name: Get disk usage
+    shell: df -h
+    register: disk_usage
+  - name: Display disk usage
+    debug:
+      msg: "{{ disk_usage.stdout }}"
+
+-
   # install Python packages with pip
   hosts: localhost
   connection: local
   gather_facts: yes
+  tags:
+  - install_python_packages
+
+  vars:
+    nixpkgs_branch: "nixos-26.05"
+    nix_bin_dir: /nix/var/nix/profiles/default/bin
+    nix_bin_path: "{{ nix_bin_dir }}/nix"
+    pint_version: 0.26.2
 
   tasks:
-  - name: Update OS to point python to python3
-    apt:
-      name: python-is-python3
-      update_cache: yes
-  - name: Install pip for python3 with Apt
-    apt:
-      name: python3-pip
-      update_cache: yes
+  - name: Install python3  with nix
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#python3 --extra-experimental-features 'nix-command flakes'"
+    environment:
+      LD_LIBRARY_PATH: ""
+  - name: Install pip  with nix
+    shell: "{{ nix_bin_path }} profile install nixpkgs/{{ nixpkgs_branch }}#python313Packages.pip --extra-experimental-features 'nix-command flakes'"
+    environment:
+      LD_LIBRARY_PATH: ""
   - name: Install python packages with pip
     pip:
       break_system_packages: true
       name:
-        - pint
+        - pint=={{ pint_version }}
+        - voila
+        - notebook==6.5.7
+        # - jupyterlab==3.6.8
+      extra_args: --ignore-installed
+    environment:
+      LD_LIBRARY_PATH: ""
+      PATH: "{{ nix_bin_dir }}:$PATH"
+  - name: Get Pint version
+    shell: "{{ nix_bin_dir }}/python -c 'import pint; print(pint.__version__)'"
+    register: installed_pint_version
+    environment:
+      LD_LIBRARY_PATH: ""
+  - name: Display Pint versions
+    debug:
+      msg: "pint = {{ installed_pint_version.stdout }}"
+  - name: Test Pint version
+    fail:
+      msg: "Pint Version Error: Expected {{ pint_version }} | Found {{ installed_pint_version.stdout }}"
+    when: installed_pint_version.stdout != pint_version
   - name: Get disk usage
     shell: df -h
     register: disk_usage
@@ -312,103 +461,6 @@
     fail:
       msg: "Yarn Version Error: Expected {{ yarn_version }} | Found {{ installed_yarn_version.stdout }}"
     when: installed_yarn_version.stdout != yarn_version
-
-- 
-  # install sudo for the vs-code role below 
-  hosts: localhost
-  connection: local
-
-  tasks:
-  - name: Install Sudo
-    apt:
-      name: sudo
-      update_cache: yes
-  - name: Preserve DONT_PROMPT_WSL_INSTALL in sudoers
-    lineinfile:
-      path: "/etc/sudoers"
-      line: "Defaults        env_keep += \"DONT_PROMPT_WSL_INSTALL\""
-    when: wsl2_environment
-  - name: Get disk usage
-    shell: df -h
-    register: disk_usage
-  - name: Display disk usage
-    debug:
-      msg: "{{ disk_usage.stdout }}"
-
--
-# add dev user to give vs code somewhere to install extensions
-  hosts: localhost
-  connection: local
-
-  tasks:
-  - name: Add dev user
-    user:
-      name: dev
-      uid: 1002
-  - name: Get disk usage
-    shell: df -h
-    register: disk_usage
-  - name: Display disk usage
-    debug:
-      msg: "{{ disk_usage.stdout }}"
-
--
-  # install the remainder of the tools
-  hosts: localhost
-  connection: local
-  environment: 
-    DONT_PROMPT_WSL_INSTALL: 1
-
-  tasks:
-  - name: Get disk usage
-    shell: df -h
-    register: disk_usage
-  - name: Display disk usage
-    debug:
-      msg: "{{ disk_usage.stdout }}"
-
-  roles:
-    - role: gantsign.visual-studio-code
-      users:
-        - username: "dev"
-          visual_studio_code_extensions:
-            - ms-python.python
-            - dendron.dendron
-            - foam.foam-vscode
-          visual_studio_code_settings_overwrite: yes
-          visual_studio_code_settings: {
-            "extensions.ignoreRecommendations": true,
-            "update.mode": "none",
-            "extensions.autoUpdate": false,
-            "extensions.autoCheckUpdates": false,
-            "terminal.integrated.profiles.linux": {
-              "bash (login)": {
-                "path": "bash",
-                "args": ["-l"]
-                }
-              },
-            "terminal.integrated.defaultProfile.linux": "bash (login)" 
-          }  
-
--
-  # Copy VS Code changes to kasm-default-profile and lean up (remove) dev user now that vs code is installed
-  hosts: localhost
-  connection: local
-  tasks:
-  - name: Copy VS Code changes to kasm-default-profile
-    shell: 
-      cmd: cp -r /home/dev/.config/Code/ /home/kasm-default-profile/.config/Code/ && cp -r /home/dev/.vscode/ /home/kasm-default-profile/.vscode/
-  - name: Remove dev user
-    user:
-      name: dev
-      state: absent
-      remove: yes 
-  - name: Get disk usage
-    shell: df -h
-    register: disk_usage
-  - name: Display disk usage
-    debug:
-      msg: "{{ disk_usage.stdout }}"
 
 # Three dots indicate the end of a YAML document
 ...
